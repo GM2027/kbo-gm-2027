@@ -224,6 +224,14 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                 <span className="font-mono-stats">
                   만 {player.age}세{player.birthYear ? ` (${player.birthYear}년생)` : ''} · {player.rosterTier} · 연차 {player.serviceYears}년
                 </span>
+                {player.kboOfficialId && (
+                  <>
+                    <span>·</span>
+                    <span className="font-mono-stats text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                      KBO ID {player.kboOfficialId}
+                    </span>
+                  </>
+                )}
                 {player.permanentId && (
                   <>
                     <span>·</span>
@@ -640,30 +648,119 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                   </div>
                 )}
                 {player.historicalSeasons && player.historicalSeasons.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                      과거 시즌 공식 성적 (2024~2026 보존 · 2027 시즌 기록은 0부터 시작)
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <span>
+                        KBO 연도별 공식 성적 ({player.historicalSeasons.length}시즌 보존 · 2027 시즌은 0부터 시작)
+                      </span>
+                      {player.kboOfficialId && (
+                        <span className="font-mono-stats text-blue-600 dark:text-blue-400">
+                          KBO 공식 ID #{player.kboOfficialId}
+                        </span>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                      {player.historicalSeasons.map((hs, idx) => (
-                        <div
-                          key={`${hs.season}-${idx}`}
-                          className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono-stats text-[10px]"
-                        >
-                          <div className="font-bold text-slate-800 dark:text-slate-200">
-                            {hs.season} ({hs.team ?? teamInfo?.shortName})
-                          </div>
+                    <div className="overflow-x-auto max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900">
+                      <table className="w-full text-[10px] font-mono-stats text-right border-collapse">
+                        <thead className="bg-slate-50 dark:bg-slate-800/90 sticky top-0 text-slate-500">
                           {player.role === '타자' ? (
-                            <div className="text-slate-600 dark:text-slate-400">
-                              {hs.G ?? 0}G · AVG {typeof hs.AVG === 'number' ? hs.AVG.toFixed(3) : '-'} · {hs.HR ?? 0}HR · {hs.RBI ?? 0}RBI
-                            </div>
+                            <tr>
+                              <th className="py-1 px-1.5 text-left">시즌</th>
+                              <th className="py-1 px-1.5 text-left font-sans">구단</th>
+                              <th className="py-1 px-1.5">G</th>
+                              <th className="py-1 px-1.5">AB</th>
+                              <th className="py-1 px-1.5">H</th>
+                              <th className="py-1 px-1.5">HR</th>
+                              <th className="py-1 px-1.5">RBI</th>
+                              <th className="py-1 px-1.5">R</th>
+                              <th className="py-1 px-1.5">SB</th>
+                              <th className="py-1 px-1.5">AVG</th>
+                              <th className="py-1 px-1.5">OPS</th>
+                            </tr>
                           ) : (
-                            <div className="text-slate-600 dark:text-slate-400">
-                              {hs.G ?? 0}G · ERA {typeof hs.ERA === 'number' ? hs.ERA.toFixed(2) : '-'} · {hs.W ?? 0}승 {hs.L ?? 0}패 · {hs.IP ?? '-'}IP
-                            </div>
+                            <tr>
+                              <th className="py-1 px-1.5 text-left">시즌</th>
+                              <th className="py-1 px-1.5 text-left font-sans">구단</th>
+                              <th className="py-1 px-1.5">G</th>
+                              <th className="py-1 px-1.5">W</th>
+                              <th className="py-1 px-1.5">L</th>
+                              <th className="py-1 px-1.5">SV</th>
+                              <th className="py-1 px-1.5">HLD</th>
+                              <th className="py-1 px-1.5">IP</th>
+                              <th className="py-1 px-1.5">SO</th>
+                              <th className="py-1 px-1.5">ERA</th>
+                              <th className="py-1 px-1.5">WHIP</th>
+                            </tr>
                           )}
-                        </div>
-                      ))}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {player.historicalSeasons.map((hs, idx) => (
+                            <tr
+                              key={`${hs.season}-${idx}`}
+                              className={
+                                hs.season === 2026
+                                  ? 'bg-blue-50/60 dark:bg-blue-950/30 font-semibold'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                              }
+                            >
+                              <td className="py-1 px-1.5 text-left font-bold text-slate-800 dark:text-slate-200">
+                                {hs.season}
+                              </td>
+                              <td className="py-1 px-1.5 text-left font-sans text-slate-600 dark:text-slate-300">
+                                {hs.team ?? teamInfo?.shortName}
+                              </td>
+                              {player.role === '타자' ? (
+                                <>
+                                  <td className="py-1 px-1.5">{hs.G ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.AB ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.H ?? '-'}</td>
+                                  <td className="py-1 px-1.5 text-orange-600 dark:text-orange-400">
+                                    {hs.HR ?? '-'}
+                                  </td>
+                                  <td className="py-1 px-1.5">{hs.RBI ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.R ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.SB ?? '-'}</td>
+                                  <td className="py-1 px-1.5 font-bold">
+                                    {typeof hs.AVG === 'number' ? hs.AVG.toFixed(3) : '-'}
+                                  </td>
+                                  <td className="py-1 px-1.5">
+                                    {typeof hs.OPS === 'number' ? hs.OPS.toFixed(3) : '-'}
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="py-1 px-1.5">{hs.G ?? '-'}</td>
+                                  <td className="py-1 px-1.5 text-orange-600 dark:text-orange-400">
+                                    {hs.W ?? '-'}
+                                  </td>
+                                  <td className="py-1 px-1.5">{hs.L ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.SV ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.HLD ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.IP ?? '-'}</td>
+                                  <td className="py-1 px-1.5">{hs.SO ?? '-'}</td>
+                                  <td className="py-1 px-1.5 font-bold text-emerald-700 dark:text-emerald-400">
+                                    {typeof hs.ERA === 'number' ? hs.ERA.toFixed(2) : '-'}
+                                  </td>
+                                  <td className="py-1 px-1.5">
+                                    {typeof hs.WHIP === 'number' ? hs.WHIP.toFixed(2) : '-'}
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {player.verifiedFutures2026 && (
+                  <div className="p-2 rounded border border-blue-500/30 bg-blue-500/5 text-[10px] space-y-0.5">
+                    <div className="font-bold text-blue-700 dark:text-blue-300">
+                      2026 퓨처스리그 공식 확인 성적 ({player.verifiedFutures2026.team ?? teamInfo?.shortName})
+                    </div>
+                    <div className="font-mono-stats text-slate-700 dark:text-slate-200">
+                      {player.verifiedFutures2026.kind === 'pitching'
+                        ? `${player.verifiedFutures2026.values.G ?? 0}G · ${player.verifiedFutures2026.values.W ?? 0}승 ${player.verifiedFutures2026.values.L ?? 0}패 · ERA ${(player.verifiedFutures2026.values.ERA ?? 0).toFixed(2)} · WHIP ${(player.verifiedFutures2026.values.WHIP ?? 0).toFixed(2)} · ${player.verifiedFutures2026.values.SO ?? 0}K`
+                        : `${player.verifiedFutures2026.values.G ?? 0}G · AVG ${(player.verifiedFutures2026.values.AVG ?? 0).toFixed(3)} · ${player.verifiedFutures2026.values.H ?? 0}안타 · ${player.verifiedFutures2026.values.HR ?? 0}HR · OPS ${(player.verifiedFutures2026.values.OPS ?? 0).toFixed(3)}`}
                     </div>
                   </div>
                 )}

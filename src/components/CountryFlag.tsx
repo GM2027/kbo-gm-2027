@@ -7,31 +7,32 @@ export interface CountryFlagProps {
 }
 
 const SIZE_CLASSES: Record<'xs' | 'sm' | 'md', string> = {
-  xs: 'w-3.5 h-2.5',
-  sm: 'w-4 h-3',
-  md: 'w-5 h-3.5',
+  xs: 'w-4 h-3',
+  sm: 'w-5 h-3.5',
+  md: 'w-6 h-4',
 };
 
 function normalizeCountryKey(nationality?: string): string {
   const raw = (nationality ?? '한국').trim();
-  if (!raw || raw === '대한민국' || raw === 'KR' || raw.includes('한국')) return 'KR';
-  if (raw === '미국' || raw === 'US' || raw === 'USA') return 'US';
-  if (raw === '일본' || raw === 'JP' || raw === 'JPN') return 'JP';
-  if (raw === '베네수엘라' || raw === 'VE' || raw === 'VEN') return 'VE';
-  if (raw.includes('도미니카') || raw === 'DO' || raw === 'DOM') return 'DO';
-  if (raw === '쿠바' || raw === 'CU' || raw === 'CUB') return 'CU';
-  if (raw === '파나마' || raw === 'PA' || raw === 'PAN') return 'PA';
-  if (raw.includes('푸에르토리코') || raw === 'PR' || raw === 'PRI') return 'PR';
-  if (raw === '콜롬비아' || raw === 'CO' || raw === 'COL') return 'CO';
-  if (raw === '멕시코' || raw === 'MX' || raw === 'MEX') return 'MX';
-  if (raw === '캐나다' || raw === 'CA' || raw === 'CAN') return 'CA';
-  if (raw === '호주' || raw === '오스트레일리아' || raw === 'AU' || raw === 'AUS') return 'AU';
-  if (raw === '대만' || raw === '타이완' || raw === 'TW' || raw === 'TPE') return 'TW';
-  if (raw === '네덜란드' || raw === 'NL' || raw === 'NED') return 'NL';
-  if (raw === '퀴라소' || raw === 'CW') return 'CW';
-  if (raw === '니카라과' || raw === 'NI') return 'NI';
-  if (raw === '브라질' || raw === 'BR') return 'BR';
-  if (raw === '이탈리아' || raw === 'IT') return 'IT';
+  const upper = raw.toUpperCase();
+  if (!raw || raw === '대한민국' || upper === 'KR' || upper === 'KOR' || upper === 'KOREA' || upper === 'SOUTH KOREA' || raw.includes('한국')) return 'KR';
+  if (raw === '미국' || upper === 'US' || upper === 'USA' || upper === 'UNITED STATES') return 'US';
+  if (raw === '일본' || upper === 'JP' || upper === 'JPN' || upper === 'JAPAN') return 'JP';
+  if (raw === '베네수엘라' || upper === 'VE' || upper === 'VEN' || upper === 'VENEZUELA') return 'VE';
+  if (raw.includes('도미니카') || upper === 'DO' || upper === 'DOM' || upper.includes('DOMINICAN')) return 'DO';
+  if (raw === '쿠바' || upper === 'CU' || upper === 'CUB' || upper === 'CUBA') return 'CU';
+  if (raw === '파나마' || upper === 'PA' || upper === 'PAN' || upper === 'PANAMA') return 'PA';
+  if (raw.includes('푸에르토리코') || upper === 'PR' || upper === 'PRI' || upper.includes('PUERTO RICO')) return 'PR';
+  if (raw === '콜롬비아' || upper === 'CO' || upper === 'COL' || upper === 'COLOMBIA') return 'CO';
+  if (raw === '멕시코' || upper === 'MX' || upper === 'MEX' || upper === 'MEXICO') return 'MX';
+  if (raw === '캐나다' || upper === 'CA' || upper === 'CAN' || upper === 'CANADA') return 'CA';
+  if (raw === '호주' || raw === '오스트레일리아' || upper === 'AU' || upper === 'AUS' || upper === 'AUSTRALIA') return 'AU';
+  if (raw === '대만' || raw === '타이완' || raw.includes('타이베이') || upper === 'TW' || upper === 'TPE' || upper === 'TAIWAN') return 'TW';
+  if (raw === '네덜란드' || upper === 'NL' || upper === 'NED' || upper === 'NETHERLANDS') return 'NL';
+  if (raw === '퀴라소' || upper === 'CW' || upper === 'CUR' || upper === 'CURACAO') return 'CW';
+  if (raw === '니카라과' || upper === 'NI' || upper === 'NCA' || upper === 'NICARAGUA') return 'NI';
+  if (raw === '브라질' || upper === 'BR' || upper === 'BRA' || upper === 'BRAZIL') return 'BR';
+  if (raw === '이탈리아' || upper === 'IT' || upper === 'ITA' || upper === 'ITALY') return 'IT';
   return 'GLOBAL';
 }
 
@@ -45,7 +46,7 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
 }) => {
   const code = normalizeCountryKey(nationality);
   const label = (nationality ?? '한국').trim() || '한국';
-  const baseClass = `inline-block shrink-0 rounded-[2px] border border-black/15 dark:border-white/20 shadow-[0_0.5px_1px_rgba(0,0,0,0.18)] ${SIZE_CLASSES[size]} ${className}`;
+  const baseClass = `inline-block shrink-0 rounded-[2px] ring-1 ring-inset ring-black/15 dark:ring-white/20 shadow-[0_0.5px_1.5px_rgba(0,0,0,0.2)] overflow-hidden ${SIZE_CLASSES[size]} ${className}`;
 
   switch (code) {
     case 'KR':

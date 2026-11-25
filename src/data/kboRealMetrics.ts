@@ -20,27 +20,37 @@ export const KBO_3YR_LEAGUE_BASELINE = {
   babip: 0.312,
 };
 
+function safeNum(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+
 /**
- * v18 재보정 세부 능력치(game_ratings)를 경기 시뮬레이션 엔진 보정치로 변환
+ * v18 재보정 세부 능력치(game_ratings)를 경기 시뮬레이션 엔진 보정치로 변환 (결측 필드 NaN 원천 차단)
  */
 export function getV18EngineSkillBonus(p: Player): number {
+  const baseAbility = safeNum(p.ability, 60);
   if (!p.v18Ratings) return 0;
   if (p.role === '타자' && p.v18Ratings.batting) {
     const b = p.v18Ratings.batting;
     const composite =
-      b.contact * 0.32 + b.power * 0.28 + b.discipline * 0.18 + b.avoid_k * 0.12 + b.speed * 0.1;
-    // ability와 세부 지표의 편차를 -3.5 ~ +3.5 범위로 자연스럽게 반영 (기록 경신 포텐셜 유지)
-    return Math.max(-3.5, Math.min(3.5, (composite - p.ability) * 0.18));
+      safeNum(b.contact, baseAbility) * 0.32 +
+      safeNum(b.power, baseAbility) * 0.28 +
+      safeNum(b.discipline, baseAbility) * 0.18 +
+      safeNum(b.avoid_k, baseAbility) * 0.12 +
+      safeNum(b.speed, baseAbility) * 0.1;
+    const delta = (composite - baseAbility) * 0.18;
+    return Number.isFinite(delta) ? Math.max(-3.5, Math.min(3.5, delta)) : 0;
   }
   if (p.role === '투수' && p.v18Ratings.pitching) {
     const pt = p.v18Ratings.pitching;
     const composite =
-      pt.stuff * 0.3 +
-      pt.control * 0.28 +
-      pt.hr_prevention * 0.18 +
-      pt.run_prevention * 0.14 +
-      pt.traffic_control * 0.1;
-    return Math.max(-3.5, Math.min(3.5, (composite - p.ability) * 0.18));
+      safeNum(pt.stuff, baseAbility) * 0.3 +
+      safeNum(pt.control, baseAbility) * 0.28 +
+      safeNum(pt.hr_prevention, baseAbility) * 0.18 +
+      safeNum(pt.run_prevention, baseAbility) * 0.14 +
+      safeNum(pt.traffic_control, baseAbility) * 0.1;
+    const delta = (composite - baseAbility) * 0.18;
+    return Number.isFinite(delta) ? Math.max(-3.5, Math.min(3.5, delta)) : 0;
   }
   return 0;
 }

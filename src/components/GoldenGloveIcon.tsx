@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { Award } from 'lucide-react';
 import { resolvePublicAssetUrl } from '../utils/assetUrl';
 
-/** 사용자가 업로드한 투명 배경 KBO 골든글러브 트로피 이미지 (골든글러브 전용) */
-export const KBO_GOLDEN_GLOVE_PNG_URL =
-  '/assets/aistudio/71d75e43-000f-4e5b-9bdc-76772cba0664_eb893073.png';
+/** 실제 KBO 골든글러브 트로피 디자인 기반 투명 배경 이미지 (골든글러브 전용) */
+export const KBO_GOLDEN_GLOVE_PNG_URL = '/logos/kbo_golden_glove.png';
 
 interface GoldenGloveIconProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';

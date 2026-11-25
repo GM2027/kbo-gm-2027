@@ -6,6 +6,7 @@ import {
   Globe2,
   Lock,
   RefreshCw,
+  Search,
   Sparkles,
   UserCheck,
   UserMinus,
@@ -123,6 +124,14 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 
   const [notice, setNotice] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [domesticFilter, setDomesticFilter] = useState<'pending' | 'all'>('pending');
+  const [franchiseSearch, setFranchiseSearch] = useState<string>('');
+  const [domesticSearch, setDomesticSearch] = useState<string>('');
+  const [faSearch, setFaSearch] = useState<string>('');
+  const [protectionSearch, setProtectionSearch] = useState<string>('');
+  const [foreignSearch, setForeignSearch] = useState<string>('');
+  const [tradeGiveSearch, setTradeGiveSearch] = useState<string>('');
+  const [tradeReceiveSearch, setTradeReceiveSearch] = useState<string>('');
+  const [waiverReleaseSearch, setWaiverReleaseSearch] = useState<string>('');
   const [foreignMarketFilter, setForeignMarketFilter] = useState<'전체' | '외국인' | '아시아쿼터'>('전체');
   const [replaceId, setReplaceId] = useState<string>('');
 
@@ -160,8 +169,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
         (p.rosterTier === '2군' || p.rosterTier === '1군') &&
         p.militaryStatus !== '상무복무'
     )
-    .sort((a, b) => a.ability - b.ability)
-    .slice(0, 20);
+    .sort((a, b) => a.ability - b.ability);
+
+  const matchesQuery = (query: string, ...fields: (string | number | undefined | null)[]) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return fields.some((f) => f !== undefined && f !== null && String(f).toLowerCase().includes(q));
+  };
 
   const myPlayers = Object.values(career.players)
     .filter(
@@ -815,9 +829,26 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-1.5 max-h-56 overflow-y-auto">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={protectionSearch}
+                    onChange={(e) => setProtectionSearch(e.target.value)}
+                    placeholder="보호명단 선수 이름·포지션 검색"
+                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded border border-amber-400/60 bg-white dark:bg-slate-950"
+                  />
+                </div>
+                <span className="text-[11px] font-mono-stats text-amber-800 dark:text-amber-300 font-semibold">
+                  선택 {protectedSelection.length}/{career.pendingFaProtection.protectionLimit}명 · 전체 대상{' '}
+                  {myDomestic.filter((p) => p.rosterTier === '1군' || p.rosterTier === '2군').length}명
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-1.5 max-h-64 overflow-y-auto overscroll-contain pr-1">
                 {myDomestic
                   .filter((p) => p.rosterTier === '1군' || p.rosterTier === '2군')
+                  .filter((p) => matchesQuery(protectionSearch, p.name, p.position, p.rosterTier))
                   .map((p) => {
                     const checked = protectedSelection.includes(p.id);
                     const limit = career.pendingFaProtection!.protectionLimit;
@@ -858,7 +889,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="divide-y divide-orange-200/70 dark:divide-orange-900/40">
+              <div className="max-h-[380px] overflow-y-auto overscroll-contain pr-1.5 divide-y divide-orange-200/70 dark:divide-orange-900/40">
                 {myDepartedFa.map((item) => {
                   const p = item.player;
                   const years = faOfferYears[p.id] ?? item.fairYears;
@@ -974,24 +1005,52 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
           )}
 
           {/* External FA Market (#6, #23, #25, #26, #33) */}
-          <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="text-sm font-extrabold">외부 FA 시장 (A·B·C등급 보상 규정 · 에이전트 경쟁 협상)</div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  고액 연봉만으로 무조건 계약되지 않으며 에이전트 성향(우승권·대형시장·장기보장)과 타 구단 경쟁 입찰이 반영됩니다.
-                </p>
+          {(() => {
+            const filteredExternalFa = externalFaMarket.filter((item) =>
+              matchesQuery(
+                faSearch,
+                item.player.name,
+                item.player.position,
+                KBO_TEAMS[item.player.teamId]?.name,
+                KBO_TEAMS[item.player.teamId]?.shortName,
+                item.grade
+              )
+            );
+            return (
+          <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-extrabold">외부 FA 시장 (A·B·C등급 보상 규정 · 에이전트 경쟁 협상)</div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    고액 연봉만으로 무조건 계약되지 않으며 에이전트 성향(우승권·대형시장·장기보장)과 타 구단 경쟁 입찰이 반영됩니다.
+                  </p>
+                </div>
+                <span className="text-[11px] text-slate-600 dark:text-slate-300 font-mono-stats font-bold">
+                  표시 {filteredExternalFa.length}명 / 등록 {externalFaMarket.length}명
+                </span>
               </div>
-              <span className="text-[11px] text-slate-500 font-mono-stats">
-                시장 등록 FA {externalFaMarket.length}명
-              </span>
+              {externalFaMarket.length > 0 && (
+                <div className="relative max-w-xs">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={faSearch}
+                    onChange={(e) => setFaSearch(e.target.value)}
+                    placeholder="FA 선수명 · 원소속팀 · 포지션 · 등급 검색"
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                  />
+                </div>
+              )}
             </div>
 
             {externalFaMarket.length === 0 ? (
-              <p className="text-slate-500 py-4 text-center">현재 계약 가능한 외부 FA 대상 선수가 없습니다.</p>
+              <p className="text-slate-500 py-6 text-center">현재 계약 가능한 외부 FA 대상 선수가 없습니다.</p>
+            ) : filteredExternalFa.length === 0 ? (
+              <p className="text-slate-500 py-6 text-center">검색 조건에 해당하는 외부 FA 선수가 없습니다.</p>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {externalFaMarket.map((item) => {
+              <div className="max-h-[520px] overflow-y-auto overscroll-contain px-4 divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredExternalFa.map((item) => {
                   const p = item.player;
                   const years = faOfferYears[p.id] ?? item.fairYears;
                   const totalStr = faOfferTotal[p.id] ?? item.fairTotalBillion.toFixed(1);
@@ -1076,7 +1135,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                                   <span className="font-bold text-orange-600 dark:text-amber-400">
                                     경쟁 입찰 ({neg.bids.length}개 구단):
                                   </span>
-                                  {neg.bids.slice(0, 4).map((b) => (
+                                  {neg.bids.map((b) => (
                                     <span
                                       key={b.teamId}
                                       className={`px-1.5 py-0.5 rounded border font-mono-stats ${
@@ -1209,19 +1268,26 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               </div>
             )}
           </div>
+            );
+          })()}
 
           {/* Overseas Returnees (#10) */}
           <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md p-4 space-y-3">
-            <div>
-              <div className="text-sm font-extrabold">해외 리그 복귀 · 해외 직행 선수 시장</div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                MLB 포스팅 진출 선수(고우석 등)는 원소속 구단 우선협상권이 적용되며, 고교 졸업 후 해외 직행 선수(박효준·배지환 등)는 원소속팀이 없어 전 구단 동등 조건으로 영입할 수 있습니다.
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-extrabold">해외 리그 복귀 · 해외 직행 선수 시장</div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  MLB 포스팅 진출 선수(고우석 등)는 원소속 구단 우선협상권이 적용되며, 고교 졸업 후 해외 직행 선수(박효준·배지환 등)는 원소속팀이 없어 전 구단 동등 조건으로 영입할 수 있습니다.
+                </p>
+              </div>
+              <span className="text-[11px] font-mono-stats text-slate-500">
+                등록 {overseasReturnees.length}명
+              </span>
             </div>
             {overseasReturnees.length === 0 ? (
               <p className="text-slate-500">현재 복귀 협상 가능한 해외파 선수가 없습니다.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto overscroll-contain pr-1">
                 {overseasReturnees.map((cand) => {
                   const hasOrig = cand.originalKboTeamId !== null;
                   const isOrig = hasOrig && cand.originalKboTeamId === career.playerTeamId;
@@ -1305,170 +1371,220 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               (a) => career.players[a.playerId]?.category === '국내'
             );
             if (franchiseStars.length === 0) return null;
+            const filteredFranchiseStars = franchiseStars.filter((star) => {
+              const pl = career.players[star.playerId];
+              return matchesQuery(
+                franchiseSearch,
+                pl?.name,
+                pl?.position,
+                pl?.uniformNumber,
+                star.tier,
+                star.protectionTier
+              );
+            });
             return (
-              <div className="border border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/15 rounded-md p-4 space-y-2.5 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-extrabold text-amber-800 dark:text-amber-300">
-                      프랜차이즈 스타 장기 특별 재계약 (4~6년 · 원클럽 충성 할인 적용)
+              <div className="border border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/15 rounded-md overflow-hidden text-xs flex flex-col">
+                {/* 고정 상단 헤더: 제목 · 등록 인원 · 검색 */}
+                <div className="p-4 border-b border-amber-200/80 dark:border-amber-900/50 bg-amber-50/90 dark:bg-amber-950/40 space-y-2.5 shrink-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-extrabold text-amber-800 dark:text-amber-300">
+                        프랜차이즈 스타 장기 특별 재계약 (4~6년 · 원클럽 충성 할인 적용)
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                        소속 기간·통산 기록·공헌도로 선정된 프랜차이즈 스타와 장기 잔류 계약을 체결하면 팬 지지율과 구단 평판이 상승합니다. (샐러리캡 예외 선수 지정과는 별도 관리)
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-                      소속 기간·통산 기록·공헌도로 선정된 프랜차이즈 스타와 장기 잔류 계약을 체결하면 팬 지지율과 구단 평판이 상승합니다. (샐러리캡 예외 선수 지정과는 별도 관리)
-                    </p>
+                    <span className="font-mono-stats text-[11px] text-amber-800 dark:text-amber-200 font-bold px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+                      등록 {franchiseStars.length}명 · 표시 {filteredFranchiseStars.length}명
+                    </span>
                   </div>
-                  <span className="font-mono-stats text-[11px] text-amber-700 dark:text-amber-300 font-bold">
-                    대상 {franchiseStars.length}명
-                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="relative flex-1 min-w-[200px] max-w-xs">
+                      <Search className="w-3.5 h-3.5 text-amber-700/60 dark:text-amber-300/60 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={franchiseSearch}
+                        onChange={(e) => setFranchiseSearch(e.target.value)}
+                        placeholder="프랜차이즈 선수 이름 · 포지션 · 등급 검색"
+                        className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded border border-amber-400/50 bg-white dark:bg-slate-950"
+                      />
+                    </div>
+                    {franchiseStars.length > 5 && (
+                      <span className="text-[10px] text-amber-800/80 dark:text-amber-300/80 font-medium">
+                        목록 영역에서 마우스 휠·스크롤바로 마지막 선수까지 확인할 수 있습니다.
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="divide-y divide-amber-200/70 dark:divide-amber-900/40">
-                  {franchiseStars.slice(0, 6).map((star) => {
-                    const p = career.players[star.playerId];
-                    if (!p) return null;
-                    const years = franYearsMap[p.id] ?? 5;
-                    const defaultAnnual = Math.max(3, Number(((p.ability - 65) * 0.58).toFixed(1)));
-                    const defaultBonus = Math.max(2, Number((defaultAnnual * years * 0.25).toFixed(1)));
-                    const annualVal = Number(franAnnualMap[p.id] ?? defaultAnnual);
-                    const bonusVal = Number(franBonusMap[p.id] ?? defaultBonus);
-                    const safeAnnual = Number.isFinite(annualVal) && annualVal > 0 ? annualVal : defaultAnnual;
-                    const safeBonus = Number.isFinite(bonusVal) && bonusVal >= 0 ? bonusVal : defaultBonus;
-                    const estTotal = Number((safeAnnual * years + safeBonus).toFixed(1));
+                {/* 세로 스크롤 목록 영역 (전체 등록 선수 누락 없이 출력) */}
+                {filteredFranchiseStars.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500">
+                    검색 조건에 해당하는 프랜차이즈 선수가 없습니다.
+                  </div>
+                ) : (
+                  <div
+                    data-testid="franchise-stars-scroll-list"
+                    className="max-h-[420px] overflow-y-auto overscroll-contain px-4 divide-y divide-amber-200/70 dark:divide-amber-900/40"
+                  >
+                    {filteredFranchiseStars.map((star, idx) => {
+                      const p = career.players[star.playerId];
+                      if (!p) return null;
+                      const years = franYearsMap[p.id] ?? 5;
+                      const defaultAnnual = Math.max(3, Number(((p.ability - 65) * 0.58).toFixed(1)));
+                      const defaultBonus = Math.max(2, Number((defaultAnnual * years * 0.25).toFixed(1)));
+                      const annualVal = Number(franAnnualMap[p.id] ?? defaultAnnual);
+                      const bonusVal = Number(franBonusMap[p.id] ?? defaultBonus);
+                      const safeAnnual = Number.isFinite(annualVal) && annualVal > 0 ? annualVal : defaultAnnual;
+                      const safeBonus = Number.isFinite(bonusVal) && bonusVal >= 0 ? bonusVal : defaultBonus;
+                      const estTotal = Number((safeAnnual * years + safeBonus).toFixed(1));
 
-                    return (
-                      <div
-                        key={p.id}
-                        className="py-2.5 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5"
-                      >
-                        <div className="space-y-0.5 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                      return (
+                        <div
+                          key={p.id}
+                          data-testid="franchise-star-row"
+                          className="py-2.5 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5"
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono-stats text-[10px] text-amber-700/70 dark:text-amber-300/70 font-bold w-5">
+                                {idx + 1}.
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onSelectPlayer?.(p.id)}
+                                className="font-extrabold text-slate-900 dark:text-white hover:underline"
+                              >
+                                {p.name}
+                              </button>
+                              <span className="font-bold text-amber-700 dark:text-amber-300">
+                                [{star.tier} · {star.score}점]
+                              </span>
+                              <span className="font-mono-stats text-slate-500">
+                                {p.position} · 만 {p.age}세 · OVR {p.ability} · 소속 {star.tenureSeasons}시즌
+                              </span>
+                              {p.franchiseLongTermSigned && (
+                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                                  (장기계약 체결됨)
+                                </span>
+                              )}
+                            </div>
+                            <div className="pl-7 text-[11px] text-slate-500 font-mono-stats">
+                              현재 계약:{' '}
+                              {formatKrwContractSummary({
+                                years: p.contract.years,
+                                totalBillion: p.contract.totalValue,
+                                annualSalaryBillion: p.contract.annualSalary,
+                                signingBonusBillion: p.contract.signingBonus,
+                                startSeason: p.contract.startSeason,
+                              })}{' '}
+                              · 기념상품 연 {star.annualMerchBillion}억
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            <select
+                              value={years}
+                              onChange={(e) =>
+                                setFranYearsMap((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))
+                              }
+                              className="px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono-stats"
+                            >
+                              <option value={4}>4년</option>
+                              <option value={5}>5년</option>
+                              <option value={6}>6년</option>
+                            </select>
+                            <span className="text-slate-500">연봉</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="1"
+                              max="40"
+                              value={franAnnualMap[p.id] ?? String(defaultAnnual)}
+                              onChange={(e) =>
+                                setFranAnnualMap((prev) => ({ ...prev, [p.id]: e.target.value }))
+                              }
+                              className="w-16 px-1.5 py-1 text-right font-mono-stats rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                            />
+                            <span className="text-slate-500">계약금</span>
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              value={franBonusMap[p.id] ?? String(defaultBonus)}
+                              onChange={(e) =>
+                                setFranBonusMap((prev) => ({ ...prev, [p.id]: e.target.value }))
+                              }
+                              className="w-16 px-1.5 py-1 text-right font-mono-stats rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                            />
+                            <span className="font-mono-stats font-bold text-slate-700 dark:text-slate-200">
+                              총 {estTotal}억
+                            </span>
                             <button
                               type="button"
-                              onClick={() => onSelectPlayer?.(p.id)}
-                              className="font-extrabold text-slate-900 dark:text-white hover:underline"
-                            >
-                              {p.name}
-                            </button>
-                            <span className="font-bold text-amber-700 dark:text-amber-300">
-                              [{star.tier} · {star.score}점]
-                            </span>
-                            <span className="font-mono-stats text-slate-500">
-                              {p.position} · 만 {p.age}세 · OVR {p.ability} · 소속 {star.tenureSeasons}시즌
-                            </span>
-                            {p.franchiseLongTermSigned && (
-                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                                (장기계약 체결됨)
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-500 font-mono-stats">
-                            현재 계약:{' '}
-                            {formatKrwContractSummary({
-                              years: p.contract.years,
-                              totalBillion: p.contract.totalValue,
-                              annualSalaryBillion: p.contract.annualSalary,
-                              signingBonusBillion: p.contract.signingBonus,
-                              startSeason: p.contract.startSeason,
-                            })}{' '}
-                            · 기념상품 연 {star.annualMerchBillion}억
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                          <select
-                            value={years}
-                            onChange={(e) =>
-                              setFranYearsMap((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))
-                            }
-                            className="px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono-stats"
-                          >
-                            <option value={4}>4년</option>
-                            <option value={5}>5년</option>
-                            <option value={6}>6년</option>
-                          </select>
-                          <span className="text-slate-500">연봉</span>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="1"
-                            max="40"
-                            value={franAnnualMap[p.id] ?? String(defaultAnnual)}
-                            onChange={(e) =>
-                              setFranAnnualMap((prev) => ({ ...prev, [p.id]: e.target.value }))
-                            }
-                            className="w-16 px-1.5 py-1 text-right font-mono-stats rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
-                          />
-                          <span className="text-slate-500">계약금</span>
-                          <input
-                            type="number"
-                            step="1"
-                            min="0"
-                            max="100"
-                            value={franBonusMap[p.id] ?? String(defaultBonus)}
-                            onChange={(e) =>
-                              setFranBonusMap((prev) => ({ ...prev, [p.id]: e.target.value }))
-                            }
-                            className="w-16 px-1.5 py-1 text-right font-mono-stats rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
-                          />
-                          <span className="font-mono-stats font-bold text-slate-700 dark:text-slate-200">
-                            총 {estTotal}억
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const preview = previewContractSalaryCapImpact(career, {
-                                title: `${p.name}(${star.tier}) 프랜차이즈 장기계약 (${years}년 총 ${estTotal}억)`,
-                                items: [
-                                  {
-                                    existingPlayerId: p.id,
-                                    playerName: p.name,
-                                    category: '국내',
-                                    years,
-                                    annualSalaryBillion: safeAnnual,
-                                    signingBonusBillion: safeBonus,
-                                    cashRequiredNowBillion: safeBonus,
-                                  },
-                                ],
-                              });
-                              setPendingContract({
-                                preview,
-                                confirmLabel: '단장 승인 · 프랜차이즈 장기계약 체결',
-                                execute: () => {
-                                  try {
-                                    setNotice(null);
-                                    const res = proposeFranchiseLongTermContract(
-                                      career,
-                                      p.id,
+                              onClick={() => {
+                                const preview = previewContractSalaryCapImpact(career, {
+                                  title: `${p.name}(${star.tier}) 프랜차이즈 장기계약 (${years}년 총 ${estTotal}억)`,
+                                  items: [
+                                    {
+                                      existingPlayerId: p.id,
+                                      playerName: p.name,
+                                      category: '국내',
                                       years,
-                                      safeAnnual,
-                                      safeBonus
-                                    );
-                                    onUpdateCareer(res.nextCareer, res.backupSnapshot);
-                                    setNotice({ type: 'ok', text: res.message });
-                                  } catch (err) {
-                                    setNotice({
-                                      type: 'err',
-                                      text: err instanceof Error ? err.message : '장기계약 제안 오류',
-                                    });
-                                  }
-                                },
-                              });
-                            }}
-                            className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold"
-                          >
-                            장기계약 제안
-                          </button>
+                                      annualSalaryBillion: safeAnnual,
+                                      signingBonusBillion: safeBonus,
+                                      cashRequiredNowBillion: safeBonus,
+                                    },
+                                  ],
+                                });
+                                setPendingContract({
+                                  preview,
+                                  confirmLabel: '단장 승인 · 프랜차이즈 장기계약 체결',
+                                  execute: () => {
+                                    try {
+                                      setNotice(null);
+                                      const res = proposeFranchiseLongTermContract(
+                                        career,
+                                        p.id,
+                                        years,
+                                        safeAnnual,
+                                        safeBonus
+                                      );
+                                      onUpdateCareer(res.nextCareer, res.backupSnapshot);
+                                      setNotice({ type: 'ok', text: res.message });
+                                    } catch (err) {
+                                      setNotice({
+                                        type: 'err',
+                                        text: err instanceof Error ? err.message : '장기계약 제안 오류',
+                                      });
+                                    }
+                                  },
+                                });
+                              }}
+                              className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                            >
+                              장기계약 제안
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })()}
 
+          {(() => {
+            const filteredDomestic = visibleDomestic.filter((p) =>
+              matchesQuery(domesticSearch, p.name, p.position, p.rosterTier, p.uniformNumber, p.contract.status)
+            );
+            return (
           <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex rounded border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
                 <button
                   type="button"
@@ -1493,8 +1609,18 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   국내 전체 ({myDomestic.length})
                 </button>
               </div>
-              <span className="text-[11px] text-slate-500 hidden sm:inline">
-                능력치·연차 기준으로 적정 계약을 자동 산출합니다.
+              <div className="relative min-w-[180px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={domesticSearch}
+                  onChange={(e) => setDomesticSearch(e.target.value)}
+                  placeholder="국내 선수 이름·포지션 검색"
+                  className="w-full pl-8 pr-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                />
+              </div>
+              <span className="text-[11px] font-mono-stats text-slate-500">
+                표시 {filteredDomestic.length}명 / 등록 {visibleDomestic.length}명
               </span>
             </div>
 
@@ -1513,10 +1639,14 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-300 dark:border-slate-700 rounded">
               현재 미계약·만료 상태인 국내 선수가 없습니다. 상단에서 [국내 전체]를 선택해 연장 계약을 진행할 수 있습니다.
             </div>
+          ) : filteredDomestic.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-300 dark:border-slate-700 rounded">
+              검색 조건에 해당하는 국내 선수가 없습니다.
+            </div>
           ) : (
-            <div className="overflow-x-auto max-h-[520px] overflow-y-auto border border-slate-200 dark:border-slate-800 rounded">
+            <div className="overflow-x-auto max-h-[520px] overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-800 rounded">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 text-slate-500">
+                <thead className="bg-slate-50 dark:bg-slate-800/95 sticky top-0 z-10 text-slate-500 shadow-xs">
                   <tr>
                     <th className="py-2 px-3">선수</th>
                     <th className="py-2 px-2">소속/포지션</th>
@@ -1528,7 +1658,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {visibleDomestic.map((p) => {
+                  {filteredDomestic.map((p) => {
                     const quote = generateAiDomesticContract(p);
                     const exceedsCash = cashBalance !== null && quote.totalBillion > cashBalance;
                     const isRec = recommendedDomesticIds.has(p.id);
@@ -1641,6 +1771,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </div>
           )}
           </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1738,9 +1870,14 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </div>
           </div>
 
+          {(() => {
+            const filteredForeignMarket = visibleForeignMarket.filter((c) =>
+              matchesQuery(foreignSearch, c.name, c.position, c.nationality, c.category, c.previousLeagueClub)
+            );
+            return (
           <div className="lg:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-bold">해외 외국인 · 가상 스카우트 마켓</div>
                 <div className="flex rounded border border-slate-200 dark:border-slate-700 overflow-hidden text-[11px]">
                   {(['전체', '외국인', '아시아쿼터'] as const).map((f) => (
@@ -1758,15 +1895,30 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                     </button>
                   ))}
                 </div>
+                <span className="text-[11px] font-mono-stats text-slate-500">
+                  표시 {filteredForeignMarket.length} / 등록 {visibleForeignMarket.length}명
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={handleRefreshMarket}
-                className="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold inline-flex items-center gap-1"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>가상 마켓 갱신</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[170px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={foreignSearch}
+                    onChange={(e) => setForeignSearch(e.target.value)}
+                    placeholder="후보 이름·포지션·국적 검색"
+                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefreshMarket}
+                  className="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold inline-flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>가상 마켓 갱신</span>
+                </button>
+              </div>
             </div>
 
             {/* Overseas Scout Dispatch Bar */}
@@ -1816,8 +1968,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              {visibleForeignMarket.map((c) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs max-h-[560px] overflow-y-auto overscroll-contain pr-1">
+              {filteredForeignMarket.map((c) => {
                 const krwCost = usdToKrwBillion(c.suggestedTotalUsd);
                 const exceedsCash = cashBalance !== null && krwCost > cashBalance;
                 const isAiPick = recommendedForeign?.candidateId === c.id;
@@ -1851,9 +2003,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span className="inline-flex items-center gap-1">
-                          <NationalityBadge nationality={c.nationality} size="xs" />
-                          <span>· {c.position} · {c.age}세</span>
+                        <span>
+                          {c.position} · {c.age}세
                         </span>
                         <div className="flex items-center gap-1">
                           {c.isVirtual && (
@@ -1911,6 +2062,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               })}
             </div>
           </div>
+            );
+          })()}
         </div>
       )}
 
@@ -2013,7 +2166,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                 현재 도착한 타 구단 트레이드 제안이 없습니다. 경기 진행 중 자동으로 도착하거나, 우측 버튼으로 타 구단 문의를 받을 수 있습니다.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[460px] overflow-y-auto overscroll-contain pr-1">
                 {pendingIncomingTrades.map((offer) => {
                   const offerPlayers = offer.offerPlayerIds
                     .map((id) => career.players[id])
@@ -2213,11 +2366,36 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </div>
           </div>
 
+          {(() => {
+            const filteredMyDomesticTrade = myDomestic.filter((p) =>
+              matchesQuery(tradeGiveSearch, p.name, p.position, p.rosterTier, p.uniformNumber)
+            );
+            const filteredTargetDomesticTrade = targetDomestic.filter((p) =>
+              matchesQuery(tradeReceiveSearch, p.name, p.position, p.rosterTier, p.uniformNumber)
+            );
+            return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="border border-slate-200 dark:border-slate-800 rounded p-3 space-y-2">
-              <div className="font-bold">보내는 선수 ({career.playerTeamId} 국내)</div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                {myDomestic.map((p) => {
+            <div className="border border-slate-200 dark:border-slate-800 rounded overflow-hidden flex flex-col">
+              <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2 shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold">보내는 선수 ({career.playerTeamId} 국내)</span>
+                  <span className="font-mono-stats text-[11px] text-slate-500">
+                    표시 {filteredMyDomesticTrade.length} / 등록 {myDomestic.length}명
+                  </span>
+                </div>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={tradeGiveSearch}
+                    onChange={(e) => setTradeGiveSearch(e.target.value)}
+                    placeholder="보내는 선수 이름·포지션 검색"
+                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+              <div className="max-h-80 overflow-y-auto overscroll-contain px-3 py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredMyDomesticTrade.map((p) => {
                   const checked = giveIds.includes(p.id);
                   const tv = computePlayerTradeValue(p);
                   return (
@@ -2300,10 +2478,27 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               </div>
             </div>
 
-            <div className="border border-slate-200 dark:border-slate-800 rounded p-3 space-y-2">
-              <div className="font-bold">받는 선수 ({targetTeam} 국내)</div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                {targetDomestic.map((p) => {
+            <div className="border border-slate-200 dark:border-slate-800 rounded overflow-hidden flex flex-col">
+              <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2 shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold">받는 선수 ({targetTeam} 국내)</span>
+                  <span className="font-mono-stats text-[11px] text-slate-500">
+                    표시 {filteredTargetDomesticTrade.length} / 등록 {targetDomestic.length}명
+                  </span>
+                </div>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={tradeReceiveSearch}
+                    onChange={(e) => setTradeReceiveSearch(e.target.value)}
+                    placeholder="받는 선수 이름·포지션 검색"
+                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+              <div className="max-h-80 overflow-y-auto overscroll-contain px-3 py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredTargetDomesticTrade.map((p) => {
                   const checked = receiveIds.includes(p.id);
                   const tv = computePlayerTradeValue(p);
                   const assess = evaluateFranchiseStar(career, p);
@@ -2380,6 +2575,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               </div>
             </div>
           </div>
+            );
+          })()}
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
             <div className="flex flex-wrap items-center gap-3">
@@ -2664,7 +2861,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   현재 웨이버 공시 중인 선수가 없습니다. 시즌 진행 시 타 구단 방출 선수가 수시로 등록됩니다.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[420px] overflow-y-auto overscroll-contain pr-1">
                   {(career.waiverPool ?? []).map((w) => {
                     const daysLeft = w.expiresDate
                       ? Math.max(0, diffCalendarDaysIso(currentDateIso, w.expiresDate))
@@ -2726,16 +2923,46 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
               )}
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-4 space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <UserMinus className="w-4 h-4 text-rose-600" />
-                소속 국내 선수 방출 (웨이버 공시)
-              </h3>
-              <p className="text-xs text-slate-500">
-                웨이버 공시 즉시 선수단에서 제외되며 7일간 타 구단 영입 신청을 받습니다 (웨이버 영입 후 60일간 재공시 금지).
-              </p>
-              <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[380px] overflow-y-auto">
-                {domesticReleasable.map((p) => {
+            {(() => {
+              const filteredReleasable = domesticReleasable.filter((p) =>
+                matchesQuery(waiverReleaseSearch, p.name, p.position, p.rosterTier, p.uniformNumber)
+              );
+              return (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5 shrink-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <UserMinus className="w-4 h-4 text-rose-600" />
+                    소속 국내 선수 방출 (웨이버 공시)
+                  </h3>
+                  <span className="text-[11px] font-mono-stats font-bold text-slate-500">
+                    표시 {filteredReleasable.length} / 등록 {domesticReleasable.length}명
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  웨이버 공시 즉시 선수단에서 제외되며 7일간 타 구단 영입 신청을 받습니다 (웨이버 영입 후 60일간 재공시 금지).
+                </p>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={waiverReleaseSearch}
+                    onChange={(e) => setWaiverReleaseSearch(e.target.value)}
+                    placeholder="방출 대상 선수 이름·포지션 검색"
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+              <div
+                data-testid="waiver-releasable-scroll-list"
+                className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[420px] overflow-y-auto overscroll-contain px-4"
+              >
+                {filteredReleasable.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-500">
+                    검색 조건에 해당하는 소속 선수가 없습니다.
+                  </div>
+                ) : (
+                filteredReleasable.map((p) => {
                   const lock = getReWaiverRestrictionStatus(p, currentDateIso);
                   return (
                     <div key={p.id} className="py-2 flex items-center justify-between gap-2 text-xs">
@@ -2766,9 +2993,12 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </button>
                     </div>
                   );
-                })}
+                })
+                )}
               </div>
             </div>
+              );
+            })()}
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-4 space-y-3">
@@ -2786,7 +3016,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                 아직 7일 미영입으로 자유계약 전환된 선수가 없습니다.
               </div>
             ) : (
-              <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[300px] overflow-y-auto">
+              <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[320px] overflow-y-auto overscroll-contain pr-1">
                 {(career.unclaimedFreeAgents ?? []).map((fa) => {
                   const canSign =
                     career.season >= fa.eligibleSeason &&

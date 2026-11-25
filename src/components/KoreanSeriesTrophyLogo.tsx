@@ -4,9 +4,8 @@ import { TeamId } from '../types/kbo';
 import { resolvePublicAssetUrl } from '../utils/assetUrl';
 import { TeamLogo } from './TeamLogo';
 
-/** 사용자가 업로드한 투명 배경 실제 KBO 한국시리즈 우승 트로피 이미지 */
-export const KBO_OFFICIAL_TROPHY_PNG_URL =
-  '/assets/aistudio/c3ff5235-3393-4e7c-b508-745ccfbf99db_04d3ed12.png';
+/** 실제 골든듀 디자인 기반 투명 배경 KBO 한국시리즈 우승 트로피 이미지 */
+export const KBO_OFFICIAL_TROPHY_PNG_URL = '/logos/kbo_korean_series_trophy.png';
 
 interface KoreanSeriesTrophyLogoProps {
   teamId?: TeamId | null;

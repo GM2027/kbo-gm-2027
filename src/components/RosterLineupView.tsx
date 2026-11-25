@@ -710,6 +710,13 @@ export const RosterLineupView: React.FC<RosterLineupViewProps> = ({
                         )}
                         <span className="truncate">{p.name}</span>
                         <PlayerCategoryTag category={p.category} compact />
+                        {p.category !== '국내' && p.nationality && (
+                          <NationalityBadge
+                            nationality={getNationalityDisplay(p.nationality).label}
+                            size="xs"
+                            className="text-[10px] font-semibold text-slate-500"
+                          />
+                        )}
                         {pos === 'DH' ? (
                           <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40">
                             {isDhOverride ? `${p.position} → DH` : 'DH'}
@@ -718,8 +725,9 @@ export const RosterLineupView: React.FC<RosterLineupViewProps> = ({
                           <span className="text-slate-500 font-normal">{pos}</span>
                         )}
                         {onNationalDuty && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">
-                            🇰🇷 국대 소집(R{p.nationalTeamDuty?.endRound} 복귀)
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">
+                            <CountryFlag nationality="한국" size="xs" />
+                            국대 소집(R{p.nationalTeamDuty?.endRound} 복귀)
                           </span>
                         )}
                         {p.injury && <span className="text-red-500 text-[11px]">(부상)</span>}
@@ -837,12 +845,16 @@ export const RosterLineupView: React.FC<RosterLineupViewProps> = ({
                           )}
                           <span>{bh.name}</span>
                           <PlayerCategoryTag category={bh.category} compact />
+                          {bh.category !== '국내' && bh.nationality && (
+                            <CountryFlag nationality={bh.nationality} size="xs" />
+                          )}
                           <span className="text-slate-500">
                             ({bh.position} · {bh.ability} · {bh.form >= 0 ? `+${bh.form}` : bh.form})
                           </span>
                           {onNt && (
-                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                              🇰🇷 국대
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                              <CountryFlag nationality="한국" size="xs" />
+                              국대
                             </span>
                           )}
                         </button>
@@ -1568,6 +1580,13 @@ export const RosterLineupView: React.FC<RosterLineupViewProps> = ({
                         >
                           <span>{p.name}</span>
                           <PlayerCategoryTag category={p.category} compact />
+                          {p.category !== '국내' && p.nationality && (
+                            <NationalityBadge
+                              nationality={getNationalityDisplay(p.nationality).label}
+                              size="xs"
+                              className="text-[10px] font-semibold text-slate-500"
+                            />
+                          )}
                           {(() => {
                             const fTier = evaluateFranchiseStar(career, p).tier;
                             if (fTier === '일반') return null;

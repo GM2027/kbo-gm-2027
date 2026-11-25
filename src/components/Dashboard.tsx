@@ -2010,6 +2010,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 )}
                                 <span className="truncate">{p.name}</span>
                                 <PlayerCategoryTag category={p.category} compact />
+                                {p.category !== '국내' && p.nationality && (
+                                  <CountryFlag nationality={p.nationality} size="xs" />
+                                )}
                                 {pos === 'DH' ? (
                                   <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40">
                                     {p.position !== 'DH' ? `${p.position}→DH` : 'DH'}
@@ -2018,8 +2021,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   <span className="text-slate-500 font-normal">{pos}</span>
                                 )}
                                 {onNt && (
-                                  <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-blue-600 text-white">
-                                    🇰🇷 국대
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1 py-0.5 rounded bg-blue-600 text-white">
+                                    <CountryFlag nationality="한국" size="xs" />
+                                    국대
                                   </span>
                                 )}
                               </span>
